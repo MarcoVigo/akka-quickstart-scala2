@@ -1,11 +1,11 @@
-package com.lightbend.akka.sample.remote
+package com.lightbend.akka.sample.ClientBroker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
 import remote._
 
-class Client extends Actor with ActorLogging {
 
+class Client extends Actor with ActorLogging {
   var LastPressione=0
   var LastTemperatura=0
 
@@ -22,6 +22,12 @@ class Client extends Actor with ActorLogging {
 
     case ERROR =>
       println("ERRORE TOPIC INESISTENTE")
+    case ERROR1 =>
+      println("ERRORE NON SEI ISCRITTO AL TOPIC SELEZIONATO")
+
+    case Stamp =>
+      println("Ultima Temperatura: "+ LastTemperatura)
+      println("Ultima Pressione: "+ LastPressione)
 
   }
 }
@@ -33,24 +39,29 @@ object Client {
     val client = ActorSystem("RemoteClient", config)
     val actor  = client.actorOf(Props[Client], "Client")
 
-    val path =  "akka.tcp://server@0.0.0.0:2552/user/Broker"
+    val path =  "akka.tcp://server@127.0.0.1:2552/user/Broker"
     val Broker = client.actorSelection(path)
 
 
-    println("Selezionare il topic di sottoscrizione: ")
-    println("1) Temperatura ")
-    println("2) Pressione")
-    println("3) ALL_TOPIC")
-    val x = scala.io.StdIn.readInt()
-    Broker ! Topic(x,actor)
+
 
 
     while(true){
-      println("Selezionare il topic da aggiornare")
-      println("1) Temperatura ")
-      println("2) Pressione")
+      println("0) Sottoscrizione a un Topic")
+      println("1) Aggiorna Temperatura ")
+      println("2) Aggiorna Pressione")
+      println("3) Ultimo valore")
+      println("4) Lascia Topic")
       val y = scala.io.StdIn.readInt()
 
+      if(y==0){
+        println("Selezionare il topic di sottoscrizione: ")
+        println("1) Temperatura ")
+        println("2) Pressione")
+        println("3) ALL_TOPIC")
+        val x = scala.io.StdIn.readInt()
+        Broker ! Topic(x,actor)
+      }
       if(y==1) {
         println("Inserire aggiornamento Temperatura")
         val a= scala.io.StdIn.readInt()
@@ -61,8 +72,10 @@ object Client {
         val a= scala.io.StdIn.readInt()
         Broker ! Update(2,a,actor)
       }
+      if(y==3) actor ! Stamp
+      if(y==4) Broker ! Exit(actor)
 
-      Thread.sleep(10000)
+      Thread.sleep(2500)
     }
 
 

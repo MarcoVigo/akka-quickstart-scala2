@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample.remote
+package com.lightbend.akka.sample.ClientBroker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
@@ -18,25 +18,37 @@ class  Broker extends Actor with ActorLogging{
 
     case Topic(i,other) =>
       println("SOTTOSCRIZIONE AL TOPIC RICEVUTA DA  "+other)
-      if(i==1) Topic_Temperatura+=other
-      else if(i==2) Topic_Pressione+=other
+      if(i==1 && !Topic_Temperatura.contains(other)) Topic_Temperatura+=other
+      else if(i==2 && !Topic_Pressione.contains(other)) Topic_Pressione+=other
       else if(i==3){
-        Topic_Temperatura+=other
-        Topic_Pressione+=other
+        if(!Topic_Temperatura.contains(other))Topic_Temperatura+=other
+        if(!Topic_Pressione.contains(other))Topic_Pressione+=other
       }
       else other ! ERROR
 
     case Update(topic,valore,other)=>
       println("UPDATE RICEVUTO "+topic+""+valore+""+other)
       if(topic==1){
-        Temperatura=valore
-        Topic_Temperatura.foreach(_ ! Aggiornamento(valore,other,"Temperatura"))
+        if(Topic_Temperatura.contains(other)) {
+          Temperatura = valore
+          Topic_Temperatura.foreach(_ ! Aggiornamento(valore, other, "Temperatura"))
+        }
+        else other ! ERROR1
       }
-      else if(topic==2){
-        Pressione=valore
-        Topic_Pressione.foreach(_ ! Aggiornamento(valore,other,"Pressione"))
+      else if(topic==2) {
+        if (Topic_Pressione.contains(other)) {
+          Pressione = valore
+          Topic_Pressione.foreach(_ ! Aggiornamento(valore, other, "Pressione"))
+        }
+        else other ! ERROR1
       }
       else other ! ERROR
+
+    case Exit(other)=>
+      if(Topic_Pressione.contains(other)) Topic_Pressione-=other
+      else other ! ERROR1
+      if(Topic_Temperatura.contains(other)) Topic_Temperatura-=other
+      else other ! ERROR1
 
   }
 }
@@ -59,7 +71,7 @@ object Broker{
       |  remote {
       |    enabled-transports = ["akka.remote.netty.tcp"]
       |    netty.tcp {
-      |      hostname = "0.0.0.0"
+      |      hostname = "127.0.0.1"
       |      port = 2552
       |    }
       |  }
