@@ -2,32 +2,59 @@ package com.lightbend.akka.sample.ClientBroker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
-import remote._
 
 
-class Client extends Actor with ActorLogging {
-  var LastPressione=0
-  var LastTemperatura=0
+
+class  Client extends Actor {
+
+  val R = org.ddahl.rscala.RClient()
+  var countT=0
+  var countP=0
 
   def receive: Receive = {
-
-    case Aggiornamento(valore,other,s)=>
-      println(""+s+" aggiornata correttamente da "+other)
-      println ("Nuovo valore = " +valore)
-      if(s.equals("Temperatura")) LastTemperatura=valore
-      else if(s.equals("Pressione")) LastPressione=valore
-
-    case s:String =>
-      println(""+s)
-
     case ERROR =>
       println("ERRORE TOPIC INESISTENTE")
     case ERROR1 =>
       println("ERRORE NON SEI ISCRITTO AL TOPIC SELEZIONATO")
+    case SottoscrizioneT =>
+      R eval
+    """
+         CampioneT=c()
+         Temperatura=c()
+         ContatoreT=0
+         ValoreT=0
+      """
+    case SottoscrizioneP =>
+      R eval
+        """
+         CampioneP=c()
+         Pressione=c()
+         ContatoreP=0
+         ValoreP=0
+      """
+    case DatoT(i) =>
+      R.ContatoreT=countT
+      R.ValoreT=i
+      countT+=1
+      R eval
+        """
+          CampioneT= append(CampioneT,ContatoreT)
+          Temperatura= append(Temperatura,ValoreT)
+          plot(CampioneT,Temperatura,type ="b")
 
-    case Stamp =>
-      println("Ultima Temperatura: "+ LastTemperatura)
-      println("Ultima Pressione: "+ LastPressione)
+      """
+    case DatoP(i) =>
+      R.ContatoreP=countP
+      R.ValoreP=i
+      countP+=1
+      R eval
+        """
+          CampioneP= append(CampioneP,ContatoreP)
+          Pressione= append(Pressione,ValoreP)
+          plot(CampioneP,Pressione,type ="b")
+
+      """
+
 
   }
 }
@@ -47,34 +74,18 @@ object Client {
 
 
     while(true){
-      println("0) Sottoscrizione a un Topic")
-      println("1) Aggiorna Temperatura ")
-      println("2) Aggiorna Pressione")
-      println("3) Ultimo valore")
-      println("4) Lascia Topic")
+      println("1) Sottoscrizione Temperatura")
+      println("2) Sottoscrizione Pressione ")
+      println("3) Sottoscrizione a Entrambi ")
+      println("4) Lascia Topic Temperatura")
+      println("5) Lascia Topic Pressione")
       val y = scala.io.StdIn.readInt()
-
-      if(y==0){
-        println("Selezionare il topic di sottoscrizione: ")
-        println("1) Temperatura ")
-        println("2) Pressione")
-        println("3) ALL_TOPIC")
-        val x = scala.io.StdIn.readInt()
-        Broker ! Topic(x,actor)
-      }
-      if(y==1) {
-        println("Inserire aggiornamento Temperatura")
-        val a= scala.io.StdIn.readInt()
-        Broker ! Update(1,a,actor)
-      }
-      if(y==2) {
-        println("Inserire aggiornamento Pressione")
-        val a= scala.io.StdIn.readInt()
-        Broker ! Update(2,a,actor)
-      }
-      if(y==3) actor ! Stamp
-      if(y==4) Broker ! Exit(actor)
-
+      if(y==1 || y==2 || y==3 )
+      Broker ! Topic(y,actor)
+      if(y==4) Broker ! ExitT(actor)
+      if(y==5) Broker ! ExitP(actor)
+      else
+      Broker ! ERROR
       Thread.sleep(2500)
     }
 

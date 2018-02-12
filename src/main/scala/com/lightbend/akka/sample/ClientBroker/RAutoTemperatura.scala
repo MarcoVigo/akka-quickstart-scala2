@@ -1,9 +1,9 @@
-package com.lightbend.akka.sample.RaScala
+package com.lightbend.akka.sample.ClientBroker
 
 import akka.actor.{Actor, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
 
-class RClient extends Actor{
+class RAutoTemperatura extends Actor{
 
   def receive: Receive = {
     case s:String => println("String: "+s)
@@ -12,17 +12,16 @@ class RClient extends Actor{
 
 }
 
-object RClient{
+object RAutoTemperatura{
   def main(args: Array[String]): Unit = {
 
     val config = ConfigFactory.parseString(conf)
     val client = ActorSystem("RemoteClient", config)
-    val actor  = client.actorOf(Props[RClient], "Client")
+    val actor  = client.actorOf(Props[RAutoTemperatura], "AutoValGenTemp")
 
     val path =  "akka.tcp://server@127.0.0.1:2552/user/Broker"
     val Broker = client.actorSelection(path)
 
-    Broker ! "suka"
     Thread.sleep(1000)
 
     val R = org.ddahl.rscala.RClient()
@@ -46,8 +45,8 @@ object RClient{
         """
       var random_access=R.x
       println(random_access._1)
-      Broker ! random_access._1.toString.toInt
-      Thread.sleep(100)
+      Broker ! DatoT(random_access._1.toString.toInt)
+      Thread.sleep(1000)
       //Thread.sleep(random_access._1.toString.toInt)
     }
   }
