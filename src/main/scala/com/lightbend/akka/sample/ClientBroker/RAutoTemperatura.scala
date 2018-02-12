@@ -5,9 +5,8 @@ import com.typesafe.config.ConfigFactory
 
 class RAutoTemperatura extends Actor{
 
-  def receive: Receive = {
-    case s:String => println("String: "+s)
-    case i:Int => println("Number: "+i)
+  def receive: Receive={
+    case ERROR => println("")
   }
 
 }

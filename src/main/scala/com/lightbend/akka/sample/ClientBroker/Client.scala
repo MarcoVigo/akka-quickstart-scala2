@@ -8,6 +8,7 @@ import com.typesafe.config.ConfigFactory
 class  Client extends Actor {
 
   val R = org.ddahl.rscala.RClient()
+  val S = org.ddahl.rscala.RClient()
   var countT=0
   var countP=0
 
@@ -19,15 +20,16 @@ class  Client extends Actor {
     case SottoscrizioneT =>
       R eval
     """
-         CampioneT=c()
+         Tempo=c()
          Temperatura=c()
          ContatoreT=0
          ValoreT=0
+
       """
     case SottoscrizioneP =>
-      R eval
+      S eval
         """
-         CampioneP=c()
+         Tempo=c()
          Pressione=c()
          ContatoreP=0
          ValoreP=0
@@ -38,20 +40,20 @@ class  Client extends Actor {
       countT+=1
       R eval
         """
-          CampioneT= append(CampioneT,ContatoreT)
+          Tempo= append(Tempo,ContatoreT)
           Temperatura= append(Temperatura,ValoreT)
-          plot(CampioneT,Temperatura,type ="b")
+          plot(Tempo,Temperatura, type= "b", col = "red", pch= 20)
 
       """
     case DatoP(i) =>
-      R.ContatoreP=countP
-      R.ValoreP=i
+      S.ContatoreP=countP
+      S.ValoreP=i
       countP+=1
-      R eval
+      S eval
         """
-          CampioneP= append(CampioneP,ContatoreP)
+          Tempo= append(Tempo,ContatoreP)
           Pressione= append(Pressione,ValoreP)
-          plot(CampioneP,Pressione,type ="b")
+          plot(Tempo,Pressione, type="b", col = "blue", pch= 20)
 
       """
 
@@ -68,8 +70,6 @@ object Client {
 
     val path =  "akka.tcp://server@127.0.0.1:2552/user/Broker"
     val Broker = client.actorSelection(path)
-
-
 
 
 

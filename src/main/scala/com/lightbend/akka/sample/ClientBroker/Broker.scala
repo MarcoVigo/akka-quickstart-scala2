@@ -24,7 +24,9 @@ class  Broker extends Actor /*with ActorLogging*/{
       }
       else if(i==3){
         if(!Topic_Temperatura.contains(other))Topic_Temperatura+=other
+        other ! SottoscrizioneT
         if(!Topic_Pressione.contains(other))Topic_Pressione+=other
+        other ! SottoscrizioneP
       }
       else other ! ERROR
 
